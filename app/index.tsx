@@ -25,9 +25,34 @@ function CardPage({ title, subtitle, big, small }: CardPageProps) {
   );
 }
 
+// --- New: Questionnaire card with a button that does NOT flip the parent ---
+function QuestionnaireCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <View style={{ alignItems: "center" }}>
+      <Text style={styles.cardSubtitle}>Questionnaire</Text>
+      <Text style={styles.cardTitle}>Pre-Workout</Text>
+      <Text style={styles.small}>Use the button below</Text>
+
+      <Pressable
+        onPress={(e: any) => {
+          // On web, stopPropagation prevents the outer FlipBook press from firing (so it won't flip)
+          e?.stopPropagation?.();
+          onOpen();
+        }}
+        style={({ pressed, hovered }) => [
+          styles.viewBtn,
+          (pressed || hovered) && { opacity: 0.9 },
+        ]}
+      >
+        <Text style={styles.viewBtnText}>Tap to view</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function Today() {
-  const date = useDateStore(s => s.date);
-  const setDate = useDateStore(s => s.setDate);
+  const date = useDateStore((s) => s.date);
+  const setDate = useDateStore((s) => s.setDate);
   const router = useRouter();
 
   return (
@@ -52,7 +77,7 @@ export default function Today() {
 
       {/* Flip books row */}
       <View style={styles.row}>
-        {/* LEFT page – no tap action, only long-press to flip */}
+        {/* LEFT book – only flips */}
         <FlipBook
           direction="left"
           pages={[
@@ -78,34 +103,25 @@ export default function Today() {
           ]}
         />
 
-        {/* RIGHT page – tap opens questionnaire when on page 0 */}
+        {/* RIGHT book – page 0 has an internal button; elsewhere tap flips */}
         <FlipBook
           direction="right"
           pages={[
-            <CardPage
-              key="pre"
-              title="Pre-Workout"
-              subtitle="Questionnaire"
-              small="Tap to fill ⦿"
-            />,
+            <QuestionnaireCard key="pre" onOpen={() => router.push("/questionnaire")} />,
             <CardPage
               key="hydration"
               title="Hydration"
               subtitle="Checklist"
-              small="Tap to view"
+              small="Tap to flip"
             />,
             <CardPage
               key="mindset"
               title="Mindset"
               subtitle="Daily Prompt"
-              small="Tap to reflect"
+              small="Tap to flip"
             />,
           ]}
-          onCardPress={pageIndex => {
-            if (pageIndex === 0) {
-              router.push("/questionnaire");
-            }
-          }}
+          // IMPORTANT: remove onCardPress so general taps flip; the button handles navigation itself
         />
       </View>
 
@@ -174,6 +190,18 @@ const styles = StyleSheet.create({
     color: "white",
     textAlign: "center",
     marginTop: 4,
+  },
+  // New: button on the questionnaire card
+  viewBtn: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    backgroundColor: "white",
+  },
+  viewBtnText: {
+    color: "#000",
+    fontWeight: "700",
   },
   countContainer: {
     marginTop: 40,

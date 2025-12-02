@@ -13,7 +13,8 @@ type Direction = "left" | "right";
 interface FlipBookProps {
   pages: React.ReactNode[];
   direction?: Direction;
-  onCardPress?: (pageIndex: number) => void; // tap handler (e.g. open questionnaire)
+  /** Return true to consume the tap (e.g., when you navigate) and prevent flipping */
+  onCardPress?: (pageIndex: number) => boolean | void;
 }
 
 export default function FlipBook({
@@ -27,9 +28,9 @@ export default function FlipBook({
   const onFlip = () => {
     if (pages.length <= 1 || progress.value !== 0) return;
 
-    progress.value = withTiming(1, { duration: 450 }, finished => {
+    progress.value = withTiming(1, { duration: 450 }, (finished) => {
       if (finished) {
-        const next = (index + 1) % pages.length;
+        const next = (index + 1) % pages.length; // (kept same)
         setIndex(next);
         progress.value = 0;
       }
@@ -39,7 +40,6 @@ export default function FlipBook({
   const animatedStyle = useAnimatedStyle(() => {
     const sign = direction === "right" ? 1 : -1;
     const angle = interpolate(progress.value, [0, 1], [0, 180 * sign]);
-
     return {
       transform: [{ perspective: 1000 }, { rotateY: `${angle}deg` }],
     };
@@ -48,9 +48,13 @@ export default function FlipBook({
   return (
     <Pressable
       style={styles.container}
-      onPress={() => onCardPress?.(index)}  // short tap
-      onLongPress={onFlip}                 // hold to flip
-      delayLongPress={0}                   // flip as soon as you hold down
+      onPress={() => {
+        const handled = onCardPress?.(index);
+        if (handled === true) return; // do NOT flip if caller handled the tap
+        onFlip(); // otherwise, short tap flips (kept long-press too)
+      }}
+      onLongPress={onFlip}     // kept same: hold to flip
+      delayLongPress={0}       // kept same
     >
       <Animated.View style={[styles.page, animatedStyle]}>
         {pages[index]}
